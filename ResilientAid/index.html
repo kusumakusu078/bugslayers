@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResilientAid | Mesh Node</title>
+  <script>
+    // ── Prevent opening via file:// double-click ──────────────────────
+    if (location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.innerHTML =
+          '<div style="font-family:\'Segoe UI\',sans-serif;background:#1d3557;color:#f1faee;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">' +
+          '<div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:40px 32px;max-width:420px;">' +
+          '<div style="font-size:3rem;margin-bottom:16px;">⚠️</div>' +
+          '<h2 style="font-size:1.4rem;margin-bottom:10px;color:#e63946;">Wrong way to open this app</h2>' +
+          '<p style="color:#a8dadc;margin-bottom:20px;line-height:1.6;">Do <b>NOT</b> double-click index.html.<br>You must run the Flask server first.</p>' +
+          '<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:16px;margin-bottom:20px;">' +
+          '<p style="font-size:0.8rem;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Step 1 — In your terminal:</p>' +
+          '<code style="color:#39e07d;font-size:1rem;">python app.py</code>' +
+          '</div>' +
+          '<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:16px;">' +
+          '<p style="font-size:0.8rem;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Step 2 — Open in browser:</p>' +
+          '<code style="color:#39e07d;font-size:1rem;">http://localhost:5001</code>' +
+          '</div>' +
+          '</div></div>';
+      });
+    }
+  </script>
+  <style>
+    :root {
+      --navy:   #1d3557;
+      --blue:   #457b9d;
+      --red:    #e63946;
+      --green:  #2a9d8f;
+      --amber:  #f4a261;
+      --light:  #f1faee;
+      --white:  #ffffff;
+      --card-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--light);
+      color: var(--navy);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HOMEPAGE ─────────────────────────────────────────── */
+    #homepage {
+      position: fixed; inset: 0;
+      background: var(--navy);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .hero-card {
+      background: var(--white);
+      padding: 36px 28px;
+      border-radius: 20px;
+      width: 100%; max-width: 420px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    }
+    .hero-card h1 {
+      font-size: 2rem; font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 4px;
+    }
+    .hero-card .subtitle {
+      color: #666; margin-bottom: 24px; font-size: 0.9rem;
+    }
+    .node-info-box {
+      background: #eaf4fb; border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 20px;
+      font-size: 0.82rem; color: var(--navy);
+      border: 1px solid #b8d9ee;
+      text-align: left; line-height: 1.7;
+    }
+    .node-info-box strong { display: block; margin-bottom: 2px; font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+    #nodeUrlDisplay { font-weight: 700; font-size: 0.95rem; color: var(--navy); }
+
+    input, select, textarea {
+      width: 100%; padding: 13px 14px;
+      margin: 8px 0; border-radius: 10px;
+      border: 1.5px solid #ddd;
+      font-size: 0.95rem; outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+
+    /* ── MAIN APP ─────────────────────────────────────────── */
+    #main-app {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--navy); color: var(--white);
+      padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .hub-tag {
+      background: rgba(255,255,255,0.18);
+      padding: 4px 12px; border-radius: 20px;
+      font-weight: 700; font-size: 0.82rem;
+    }
+    .mesh-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #888;
+      transition: background 0.4s;
+    }
+    .dot.online { background: #39e07d; box-shadow: 0 0 6px #39e07d88; }
+    .dot.offline { background: var(--red); }
+
+    nav {
+      display: flex;
+      background: var(--white);
+      border-bottom: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1; padding: 14px 4px; border: none;
+      background: none; color: #888;
+      font-weight: 700; cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.03em;
+      transition: color 0.2s;
+    }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+    .viewport {
+      flex: 1; overflow-y: auto;
+      padding: 14px;
+      background: #f0f4f7;
+    }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── CARDS ────────────────────────────────────────────── */
+    .card {
+      background: var(--white); border-radius: 14px;
+      padding: 16px; margin-bottom: 12px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .card h3 {
+      font-size: 1rem; margin-bottom: 12px;
+      color: var(--navy);
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    .incident-card {
+      border-left: 5px solid var(--blue);
+      padding: 12px 14px; margin-bottom: 8px;
+      background: var(--white); border-radius: 0 10px 10px 0;
+      box-shadow: var(--card-shadow);
+    }
+    .meta { font-size: 0.72rem; color: #999; font-weight: 700; margin-bottom: 4px; }
+    .inc-msg { font-size: 0.9rem; margin-bottom: 4px; }
+    .inc-loc { font-size: 0.78rem; color: #666; }
+    .inc-node { font-size: 0.7rem; color: #aaa; margin-top: 4px; }
+
+    /* category badge colours */
+    .cat-Medical    { border-left-color: var(--red); }
+    .cat-Rescue     { border-left-color: var(--amber); }
+    .cat-Food       { border-left-color: var(--green); }
+    .cat-Water      { border-left-color: var(--blue); }
+    .cat-Hazard     { border-left-color: #9b59b6; }
+    .cat-General    { border-left-color: #95a5a6; }
+
+    /* ── BUTTONS ──────────────────────────────────────────── */
+    .btn {
+      width: 100%; padding: 14px; border-radius: 12px;
+      border: none; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      font-size: 0.9rem;
+    }
+    .btn:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-navy    { background: var(--navy); color: var(--white); }
+    .btn-green   { background: var(--green); color: var(--white); }
+    .btn-sos     { background: var(--red); color: var(--white); }
+    .btn-whistle { background: var(--amber); color: white; }
+
+    /* ── SYS LOG ──────────────────────────────────────────── */
+    #sysLog {
+      font-family: monospace; font-size: 0.68rem;
+      background: #1a1a2e; color: #0f9; padding: 8px 10px;
+      border-radius: 8px; margin-bottom: 10px;
+      height: 60px; overflow-y: auto; flex-shrink: 0;
+    }
+
+    /* ── GPS BAR ──────────────────────────────────────────── */
+    #gpsBar {
+      font-size: 0.72rem; color: #999;
+      padding: 4px 0 10px;
+      text-align: center;
+    }
+    #gpsBar.active { color: var(--green); }
+
+    /* ── RESOURCES ────────────────────────────────────────── */
+    .res-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+      font-size: 0.88rem;
+    }
+    .res-row:last-child { border-bottom: none; }
+
+    /* ── GUIDE ────────────────────────────────────────────── */
+    .guide-section { margin-bottom: 20px; }
+    .guide-header {
+      font-weight: 700; font-size: 0.9rem;
+      color: var(--red); margin-bottom: 8px;
+    }
+    .guide-list { list-style: none; }
+    .guide-list li {
+      font-size: 0.84rem; margin-bottom: 7px;
+      padding-left: 14px; position: relative;
+      border-left: 2px solid #ddd; line-height: 1.5;
+    }
+
+    /* ── SPINNER ──────────────────────────────────────────── */
+    .loader {
+      border: 3px solid #f0f0f0; border-top: 3px solid var(--navy);
+      border-radius: 50%; width: 26px; height: 26px;
+      animation: spin 0.9s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      padding: 12px; background: white;
+      border-top: 1px solid #ddd; flex-shrink: 0;
+      display: flex; gap: 8px;
+    }
+    footer .btn { margin: 0; }
+
+    /* Whistle animation */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244,162,97,0.6); }
+      50%       { box-shadow: 0 0 0 12px rgba(244,162,97,0); }
+    }
+    .whistling { animation: pulse 0.8s infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HOMEPAGE ═══════════════════════════════════════════════════ -->
+<div id="homepage">
+  <div class="hero-card">
+    <h1>ResilientAid</h1>
+    <p class="subtitle">Offline Mesh Emergency Protocol</p>
+
+    <div class="node-info-box">
+      <strong>This node's URL — share with all devices on the hotspot</strong>
+      <span id="nodeUrlDisplay">Detecting...</span>
+    </div>
+
+    <input type="text" id="opName" placeholder="Operator Name / ID (optional)">
+    <select id="hubSelect">
+      <option value="" disabled selected>-- Select Grid Location --</option>
+      <option value="RAJAJINAGAR">Rajajinagar Node</option>
+      <option value="MARATHAHALLI">Marathahalli Node</option>
+      <option value="HSR_LAYOUT">HSR Layout Node</option>
+      <option value="INDIRANAGAR">Indiranagar Node</option>
+      <option value="CUSTOM">Custom / Field Node</option>
+    </select>
+    <button class="btn btn-navy" onclick="launchApp()">Establish Mesh Connection</button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ═══════════════════════════════════════════════════ -->
+<div id="main-app">
+  <header>
+    <div class="hub-tag">📍 <span id="currentHub">HUB</span></div>
+    <div class="mesh-status">
+      <div class="dot" id="meshDot"></div>
+      <span id="meshLabel">Connecting...</span>
+    </div>
+    <div id="clock" style="font-weight:700; font-size:0.88rem;">00:00:00</div>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('dash',this)">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('report',this)">Report</button>
+    <button class="tab-btn" onclick="switchTab('resource',this)">Resources</button>
+    <button class="tab-btn" onclick="switchTab('guide',this)">Guides</button>
+  </nav>
+
+  <div class="viewport">
+    <div id="sysLog">&gt; System booting...</div>
+    <div id="gpsBar">GPS: Searching...</div>
+
+    <!-- DASHBOARD -->
+    <div id="dash" class="view active">
+      <div id="loader" class="loader"></div>
+      <div id="feed"></div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="report" class="view">
+      <div class="card">
+        <h3>Broadcast Incident</h3>
+        <select id="incType">
+          <option value="Medical">🔴 Medical Emergency</option>
+          <option value="Rescue">🟠 Rescue / Trapped</option>
+          <option value="Food">🟢 Food Requirement</option>
+          <option value="Water">🔵 Water Requirement</option>
+          <option value="Hazard">🟣 Hazard / Electric / Fire</option>
+          <option value="General">⚪ General / Info</option>
+        </select>
+        <input type="text" id="incLoc" placeholder="Exact Landmark (e.g. Near HSR BDA Complex)">
+        <textarea id="incDesc" placeholder="Briefly describe the situation..." rows="3" style="resize:vertical;"></textarea>
+        <button class="btn btn-navy" id="submitBtn" onclick="submitReport()">📡 Broadcast Packet</button>
+      </div>
+    </div>
+
+    <!-- RESOURCES -->
+    <div id="resource" class="view">
+      <div class="card">
+        <h3>Community Barter Grid</h3>
+        <div id="resList">
+          <div class="res-row"><span>Drinking Water (20L)</span><b>Sector 4</b></div>
+          <div class="res-row"><span>First Aid Kit</span><b>Marathahalli Node</b></div>
+          <div class="res-row"><span>Blankets (×5)</span><b>HSR Layout</b></div>
+        </div>
+        <button class="btn btn-green" style="margin-top:14px;" onclick="addResource()">+ Offer a Resource</button>
+      </div>
+    </div>
+
+    <!-- GUIDES -->
+    <div id="guide" class="view">
+      <div class="card">
+        <div class="guide-section">
+          <div class="guide-header">🌊 Flooding &amp; Water-Logging</div>
+          <ul class="guide-list">
+            <li>Immediately switch off main circuit breakers.</li>
+            <li>Move to higher floors; never walk through moving water.</li>
+            <li>Avoid touching electrical appliances while standing in water.</li>
+            <li>Signal for help from windows or rooftops using cloth or torch.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <div class="guide-header">🔥 Fire &amp; Smoke</div>
+          <ul class="guide-list">
+            <li>Stay low — smoke rises. Crawl to exits.</li>
+            <li>Close doors to slow fire spread; don't lock them.</li>
+            <li>Never use lifts during a fire.</li>
+            <li>Signal from windows; don't jump unless fire is at your door.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <div class="guide-header">🏥 Medical — CPR Basics</div>
+          <ul class="guide-list">
+            <li>Check responsiveness; shout for help.</li>
+            <li>30 chest compressions at ~100/min, 2 rescue breaths.</li>
+            <li>Continue until help arrives or person recovers.</li>
+          </ul>
+        </div>
+        <button class="btn" style="background:#eee;color:#333;margin-top:10px;font-size:0.75rem;" onclick="location.reload();">↺ Refresh App</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <button class="btn btn-sos" style="flex:1.5;" onclick="triggerSOS()">🚨 SOS</button>
+    <button class="btn btn-whistle" style="flex:1;" id="whistleBtn" onclick="toggleWhistle()">🔊 Whistle</button>
+  </footer>
+</div>
+
+<script>
+  // ── Dynamic base URL — never hardcoded ──────────────────────────────
+  // Talks to whatever host served this page (the Flask node).
+  const BASE_URL = `${location.protocol}//${location.hostname}:5000`;
+
+  let userCoords = "GPS Pending";
+  let operatorName = "Anonymous";
+  let whistleOn = false;
+  let whistleCtx = null;
+  let whistleOsc = null;
+  let meshOnline = false;
+
+  // ── On page load: show this node's URL so operator can share it ─────
+  window.addEventListener('DOMContentLoaded', () => {
+    const url = `${BASE_URL}`;
+    document.getElementById('nodeUrlDisplay').textContent = url;
+    startClock();
+  });
+
+  // ── Clock ───────────────────────────────────────────────────────────
+  function startClock() {
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('en-IN', { hour12: false });
+    }, 1000);
+  }
+
+  // ── GPS — satellite only, no internet needed ─────────────────────────
+  function initGPS() {
+    const bar = document.getElementById('gpsBar');
+    if (!("geolocation" in navigator)) {
+      bar.textContent = "GPS: Not supported on this device";
+      return;
+    }
+    navigator.geolocation.watchPosition(
+      (pos) => {
+        userCoords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+        bar.textContent = `GPS Fixed: ${userCoords}`;
+        bar.className = 'active';
+        log(`GPS lock: ${userCoords}`);
+      },
+      (err) => {
+        bar.textContent = "GPS: Searching (works without internet)...";
+        log("GPS seeking...");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Sys log ─────────────────────────────────────────────────────────
+  function log(msg) {
+    const el = document.getElementById('sysLog');
+    const ts = new Date().toLocaleTimeString('en-IN', { hour12: false });
+    el.innerHTML += `\n> [${ts}] ${msg}`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ── Launch ───────────────────────────────────────────────────────────
+  function launchApp() {
+    const hub = document.getElementById('hubSelect').value;
+    if (!hub) { alert("Please select a grid location."); return; }
+
+    operatorName = document.getElementById('opName').value.trim() || "Anonymous";
+    document.getElementById('currentHub').textContent = hub.replace(/_/g, ' ');
+    document.getElementById('homepage').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex';
+
+    log(`Node up. Hub: ${hub}. Operator: ${operatorName}`);
+    initGPS();
+    fetchFeed();
+    setInterval(fetchFeed, 4000);
+  }
+
+  // ── Fetch & render feed ──────────────────────────────────────────────
+  async function fetchFeed() {
+    const dot   = document.getElementById('meshDot');
+    const label = document.getElementById('meshLabel');
+    const loader = document.getElementById('loader');
+
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(`${BASE_URL}/view`, { signal: controller.signal });
+      clearTimeout(tid);
+
+      const data = await res.json();
+      loader.style.display = 'none';
+
+      dot.className = 'dot online';
+      label.textContent = 'Mesh Online';
+      meshOnline = true;
+
+      const feed = document.getElementById('feed');
+      if (!data.length) {
+        feed.innerHTML = '<div class="card"><p style="color:#aaa;text-align:center;padding:10px;">Grid is clear — no active reports.</p></div>';
+        return;
+      }
+
+      feed.innerHTML = data.map(item => {
+        const catClass = `cat-${item.category}`;
+        return `
+          <div class="incident-card ${catClass}">
+            <div class="meta">[${item.category}] ${item.date || ''} ${item.timestamp}</div>
+            <div class="inc-msg"><strong>${item.name || 'Anonymous'}:</strong> ${item.msg}</div>
+            <div class="inc-loc">📍 ${item.loc || item.location || 'Location unknown'}</div>
+            <div class="inc-node">Node: ${item.node || 'unknown'}</div>
+          </div>`;
+      }).join('');
+
+      log(`Sync OK — ${data.length} report(s).`);
+    } catch (err) {
+      loader.style.display = 'none';
+      dot.className = 'dot offline';
+      label.textContent = 'Node Unreachable';
+      meshOnline = false;
+      log("Mesh link lost. Retrying...");
+    }
+  }
+
+  // ── Submit report ────────────────────────────────────────────────────
+  async function submitReport() {
+    const msg = document.getElementById('incDesc').value.trim();
+    const loc = document.getElementById('incLoc').value.trim();
+    const cat = document.getElementById('incType').value;
+
+    if (!msg) { alert("Please describe the situation."); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Broadcasting...';
+    btn.disabled = true;
+
+    const payload = {
+      name: operatorName,
+      category: cat,
+      message: msg,
+      location: (loc || 'Not specified') + ` (GPS: ${userCoords})`
+    };
+
+    try {
+      const res = await fetch(`${BASE_URL}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        log(`Broadcast OK — [${cat}] from ${operatorName}`);
+        document.getElementById('incDesc').value = '';
+        document.getElementById('incLoc').value = '';
+        switchTab('dash', document.querySelector('.tab-btn'));
+        fetchFeed();
+      } else {
+        const err = await res.json();
+        alert("Server error: " + (err.error || res.status));
+        log(`Broadcast FAILED: ${err.error || res.status}`);
+      }
+    } catch (e) {
+      alert("Cannot reach mesh node. Is the hotspot active?");
+      log("Broadcast failed — node unreachable.");
+    } finally {
+      btn.textContent = '📡 Broadcast Packet';
+      btn.disabled = false;
+    }
+  }
+
+  // ── SOS ─────────────────────────────────────────────────────────────
+  async function triggerSOS() {
+    const loc = document.getElementById('incLoc')?.value?.trim() || 'Location unknown';
+    const payload = {
+      name: operatorName,
+      category: 'Medical',
+      message: '🚨 CRITICAL SOS — Immediate assistance required!',
+      location: loc + ` (GPS: ${userCoords})`
+    };
+    try {
+      await fetch(`${BASE_URL}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      log("SOS broadcasted.");
+      fetchFeed();
+      switchTab('dash', document.querySelector('.tab-btn'));
+    } catch (e) {
+      alert("SOS could not be sent — check node connection.");
+    }
+  }
+
+  // ── Digital whistle (Web Audio API — 100% offline) ───────────────────
+  function toggleWhistle() {
+    const btn = document.getElementById('whistleBtn');
+    if (whistleOn) {
+      whistleOsc?.stop();
+      whistleCtx?.close();
+      whistleCtx = null; whistleOsc = null;
+      whistleOn = false;
+      btn.textContent = '🔊 Whistle';
+      btn.classList.remove('whistling');
+    } else {
+      try {
+        whistleCtx = new (window.AudioContext || window.webkitAudioContext)();
+        whistleOsc = whistleCtx.createOscillator();
+        const gain = whistleCtx.createGain();
+        whistleOsc.type = 'sine';
+        whistleOsc.frequency.setValueAtTime(2800, whistleCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, whistleCtx.currentTime);
+        whistleOsc.connect(gain);
+        gain.connect(whistleCtx.destination);
+        whistleOsc.start();
+        whistleOn = true;
+        btn.textContent = '🔇 Stop Whistle';
+        btn.classList.add('whistling');
+        log("Digital whistle ON (2800 Hz)");
+      } catch (e) {
+        alert("Audio not supported on this browser.");
+      }
+    }
+  }
+
+  // ── Add resource (simple prompt — no backend needed) ─────────────────
+  function addResource() {
+    const item = prompt("What are you offering?");
+    const loc  = prompt("Your sector / location?");
+    if (item && loc) {
+      const row = document.createElement('div');
+      row.className = 'res-row';
+      row.innerHTML = `<span>${item}</span><b>${loc}</b>`;
+      document.getElementById('resList').appendChild(row);
+    }
+  }
+</script>
+</body>
+</html>
