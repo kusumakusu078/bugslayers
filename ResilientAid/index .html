@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1d3557">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResilientAid | Mesh Node</title>
+  <script>
+    // ── Prevent opening via file:// double-click ──────────────────────
+    if (location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.innerHTML =
+          '<div style="font-family:\'Segoe UI\',sans-serif;background:#1d3557;color:#f1faee;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">' +
+          '<div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:40px 32px;max-width:420px;">' +
+          '<div style="font-size:3rem;margin-bottom:16px;">⚠️</div>' +
+          '<h2 style="font-size:1.4rem;margin-bottom:10px;color:#e63946;">Wrong way to open this app</h2>' +
+          '<p style="color:#a8dadc;margin-bottom:20px;line-height:1.6;">Do <b>NOT</b> double-click index.html.<br>You must run the Flask server first.</p>' +
+          '<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:16px;margin-bottom:20px;">' +
+          '<p style="font-size:0.8rem;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Step 1 — In your terminal:</p>' +
+          '<code style="color:#39e07d;font-size:1rem;">python app.py</code>' +
+          '</div>' +
+          '<div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:16px;">' +
+          '<p style="font-size:0.8rem;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Step 2 — Open in browser:</p>' +
+          '<code style="color:#39e07d;font-size:1rem;">http://localhost:5000</code>' +
+          '</div>' +
+          '</div></div>';
+      });
+    }
+  </script>
+
+  <!-- ── Node registry inlined — no external file needed ── -->
+  <script>
+  const BANGALORE_NODES = [
+    // Central
+    {id:"CITY_MARKET",        name:"City Market",           zone:"Central", lat:12.9634, lng:77.5760},
+    {id:"SHIVAJINAGAR",       name:"Shivajinagar",          zone:"Central", lat:12.9850, lng:77.6010},
+    {id:"CUBBON_PARK",        name:"Cubbon Park",           zone:"Central", lat:12.9763, lng:77.5929},
+    {id:"MG_ROAD",            name:"MG Road",               zone:"Central", lat:12.9757, lng:77.6011},
+    {id:"BRIGADE_ROAD",       name:"Brigade Road",          zone:"Central", lat:12.9716, lng:77.6080},
+    {id:"RICHMOND_TOWN",      name:"Richmond Town",         zone:"Central", lat:12.9622, lng:77.5987},
+    {id:"LANGFORD_TOWN",      name:"Langford Town",         zone:"Central", lat:12.9565, lng:77.5973},
+    {id:"VASANTNAGAR",        name:"Vasantnagar",           zone:"Central", lat:12.9887, lng:77.5800},
+    {id:"GANDHINAGAR",        name:"Gandhinagar",           zone:"Central", lat:12.9795, lng:77.5709},
+    {id:"MALLESWARAM",        name:"Malleswaram",           zone:"Central", lat:13.0035, lng:77.5710},
+    // North
+    {id:"RAJAJINAGAR",        name:"Rajajinagar",           zone:"North",   lat:12.9910, lng:77.5530},
+    {id:"YESHWANTPUR",        name:"Yeshwantpur",           zone:"North",   lat:13.0218, lng:77.5426},
+    {id:"PEENYA",             name:"Peenya",                zone:"North",   lat:13.0284, lng:77.5196},
+    {id:"HEBBAL",             name:"Hebbal",                zone:"North",   lat:13.0354, lng:77.5972},
+    {id:"YELAHANKA",          name:"Yelahanka",             zone:"North",   lat:13.1007, lng:77.5963},
+    {id:"JALAHALLI",          name:"Jalahalli",             zone:"North",   lat:13.0421, lng:77.5466},
+    {id:"DASARAHALLI",        name:"Dasarahalli",           zone:"North",   lat:13.0448, lng:77.5126},
+    {id:"TUMKUR_ROAD",        name:"Tumkur Road",           zone:"North",   lat:13.0502, lng:77.5253},
+    {id:"HBR_LAYOUT",         name:"HBR Layout",            zone:"North",   lat:13.0266, lng:77.6277},
+    {id:"THANISANDRA",        name:"Thanisandra",           zone:"North",   lat:13.0584, lng:77.6297},
+    {id:"NAGAWARA",           name:"Nagawara",              zone:"North",   lat:13.0455, lng:77.6194},
+    {id:"BANASWADI",          name:"Banaswadi",             zone:"North",   lat:13.0138, lng:77.6500},
+    {id:"RAMAMURTHY_NAGAR",   name:"Ramamurthy Nagar",      zone:"North",   lat:13.0131, lng:77.6694},
+    {id:"HENNUR",             name:"Hennur",                zone:"North",   lat:13.0443, lng:77.6374},
+    {id:"DEVANAHALLI",        name:"Devanahalli",           zone:"North",   lat:13.2464, lng:77.7122},
+    {id:"AIRPORT_ZONE",       name:"Airport Zone",          zone:"North",   lat:13.1978, lng:77.7062},
+    // South
+    {id:"JAYANAGAR",          name:"Jayanagar",             zone:"South",   lat:12.9252, lng:77.5832},
+    {id:"JP_NAGAR",           name:"JP Nagar",              zone:"South",   lat:12.9101, lng:77.5838},
+    {id:"BANASHANKARI",       name:"Banashankari",          zone:"South",   lat:12.9255, lng:77.5460},
+    {id:"BASAVANAGUDI",       name:"Basavanagudi",          zone:"South",   lat:12.9425, lng:77.5752},
+    {id:"BTM_LAYOUT",         name:"BTM Layout",            zone:"South",   lat:12.9165, lng:77.6101},
+    {id:"HSR_LAYOUT",         name:"HSR Layout",            zone:"South",   lat:12.9121, lng:77.6446},
+    {id:"KORAMANGALA",        name:"Koramangala",           zone:"South",   lat:12.9352, lng:77.6245},
+    {id:"BOMMANAHALLI",       name:"Bommanahalli",          zone:"South",   lat:12.8961, lng:77.6166},
+    {id:"BEGUR",              name:"Begur",                 zone:"South",   lat:12.8710, lng:77.6197},
+    {id:"GOTTIGERE",          name:"Gottigere",             zone:"South",   lat:12.8560, lng:77.5940},
+    {id:"HULIMAVU",           name:"Hulimavu",              zone:"South",   lat:12.8732, lng:77.5974},
+    {id:"AREKERE",            name:"Arekere",               zone:"South",   lat:12.8826, lng:77.6092},
+    {id:"KANAKPURA_ROAD",     name:"Kanakapura Road",       zone:"South",   lat:12.8998, lng:77.5667},
+    {id:"UDAYPURA",           name:"Udaypura (DSATM)",      zone:"South",   lat:12.8701, lng:77.5483},
+    {id:"TALAGHATTAPURA",     name:"Talaghattapura",        zone:"South",   lat:12.8559, lng:77.5321},
+    {id:"KENGERI",            name:"Kengeri",               zone:"South",   lat:12.9102, lng:77.4843},
+    {id:"UTTARAHALLI",        name:"Uttarahalli",           zone:"South",   lat:12.8987, lng:77.5390},
+    {id:"KONANAKUNTE",        name:"Konanakunte",           zone:"South",   lat:12.8870, lng:77.5583},
+    {id:"HARLUR",             name:"Harlur",                zone:"South",   lat:12.8996, lng:77.6629},
+    {id:"SINGASANDRA",        name:"Singasandra",           zone:"South",   lat:12.8798, lng:77.6337},
+    {id:"ELECTRONIC_CITY",    name:"Electronic City",       zone:"South",   lat:12.8399, lng:77.6770},
+    {id:"HARALUR",            name:"Haralur",               zone:"South",   lat:12.8975, lng:77.6700},
+    // East
+    {id:"INDIRANAGAR",        name:"Indiranagar",           zone:"East",    lat:12.9784, lng:77.6408},
+    {id:"MARATHAHALLI",       name:"Marathahalli",          zone:"East",    lat:12.9591, lng:77.6974},
+    {id:"WHITEFIELD",         name:"Whitefield",            zone:"East",    lat:12.9698, lng:77.7499},
+    {id:"VARTHUR",            name:"Varthur",               zone:"East",    lat:12.9376, lng:77.7459},
+    {id:"HOODI",              name:"Hoodi",                 zone:"East",    lat:12.9856, lng:77.7110},
+    {id:"BROOKEFIELD",        name:"Brookefield",           zone:"East",    lat:12.9732, lng:77.7221},
+    {id:"KR_PURAM",           name:"KR Puram",              zone:"East",    lat:13.0065, lng:77.6953},
+    {id:"KADUGODI",           name:"Kadugodi",              zone:"East",    lat:12.9886, lng:77.7611},
+    {id:"HAGADUR",            name:"Hagadur",               zone:"East",    lat:12.9748, lng:77.7344},
+    {id:"MAHADEVAPURA",       name:"Mahadevapura",          zone:"East",    lat:12.9941, lng:77.7150},
+    {id:"DODDANEKUNDI",       name:"Doddanekundi",          zone:"East",    lat:12.9626, lng:77.7183},
+    {id:"BELLANDUR",          name:"Bellandur",             zone:"East",    lat:12.9258, lng:77.6764},
+    {id:"SARJAPUR_ROAD",      name:"Sarjapur Road",         zone:"East",    lat:12.9010, lng:77.6960},
+    {id:"CARMELRAM",          name:"Carmelram",             zone:"East",    lat:12.9109, lng:77.7002},
+    {id:"IBLUR",              name:"Iblur",                 zone:"East",    lat:12.9202, lng:77.6753},
+    // West
+    {id:"VIJAYANAGAR",        name:"Vijayanagar",           zone:"West",    lat:12.9718, lng:77.5308},
+    {id:"MAGADI_ROAD",        name:"Magadi Road",           zone:"West",    lat:12.9700, lng:77.5174},
+    {id:"NAYANDAHALLI",       name:"Nayandahalli",          zone:"West",    lat:12.9360, lng:77.5270},
+    {id:"RR_NAGAR",           name:"RR Nagar",              zone:"West",    lat:12.9233, lng:77.5197},
+    {id:"RNSIT_AREA",         name:"RNSIT / Channasandra",  zone:"West",    lat:12.9230, lng:77.5120},
+    {id:"RAJARAJESHWARI_NGR", name:"Rajarajeshwari Nagar",  zone:"West",    lat:12.9132, lng:77.5006},
+    {id:"MYSORE_ROAD",        name:"Mysore Road",           zone:"West",    lat:12.9348, lng:77.5093},
+    {id:"JNANABHARATHI",      name:"Jnanabharathi",         zone:"West",    lat:12.9412, lng:77.5088},
+    {id:"NAGARBHAVI",         name:"Nagarbhavi",            zone:"West",    lat:12.9593, lng:77.5085},
+    {id:"CHORD_ROAD",         name:"Chord Road",            zone:"West",    lat:12.9836, lng:77.5361},
+    {id:"KAMAKSHIPALYA",      name:"Kamakshipalya",         zone:"West",    lat:12.9718, lng:77.5397},
+    // Greater Bangalore
+    {id:"ANEKAL",             name:"Anekal",                zone:"Greater", lat:12.7089, lng:77.6963},
+    {id:"SARJAPUR",           name:"Sarjapur",              zone:"Greater", lat:12.8607, lng:77.7836},
+    {id:"HOSKOTE",            name:"Hoskote",               zone:"Greater", lat:13.0703, lng:77.7980},
+    {id:"NELAMANGALA",        name:"Nelamangala",           zone:"Greater", lat:13.0991, lng:77.3934},
+    {id:"DODDABALLAPUR",      name:"Doddaballapur",         zone:"Greater", lat:13.2959, lng:77.5360},
+    {id:"RAMANAGARA",         name:"Ramanagara",            zone:"Greater", lat:12.7186, lng:77.2824},
+    {id:"BIDADI",             name:"Bidadi",                zone:"Greater", lat:12.8060, lng:77.3897},
+    {id:"CHANDAPURA",         name:"Chandapura",            zone:"Greater", lat:12.8139, lng:77.6671},
+    {id:"ATTIBELE",           name:"Attibele",              zone:"Greater", lat:12.7762, lng:77.6874},
+  ];
+
+  // Haversine distance helper (used by GPS mode)
+  function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371, toR = Math.PI / 180;
+    const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1*toR) * Math.cos(lat2*toR) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function findNearestNode(lat, lng) {
+    let best = null, bestDist = Infinity;
+    for (const n of BANGALORE_NODES) {
+      const d = haversineKm(lat, lng, n.lat, n.lng);
+      if (d < bestDist) { bestDist = d; best = n; }
+    }
+    return { node: best, distanceKm: bestDist };
+  }
+  function findNearestNodes(lat, lng, count) {
+    return BANGALORE_NODES
+      .map(n => ({ node: n, distanceKm: haversineKm(lat, lng, n.lat, n.lng) }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, count);
+  }
+  </script>
+
+  <style>
+    :root {
+      --navy:   #1d3557;
+      --blue:   #457b9d;
+      --red:    #e63946;
+      --green:  #2a9d8f;
+      --amber:  #f4a261;
+      --light:  #f1faee;
+      --white:  #ffffff;
+      --card-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: var(--light);
+      color: var(--navy);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HOMEPAGE ─────────────────────────────────────────── */
+    #homepage {
+      position: fixed; inset: 0;
+      background: var(--navy);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .hero-card {
+      background: var(--white);
+      padding: 24px 20px 20px;
+      border-radius: 20px;
+      width: 100%; max-width: 420px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+    }
+    .hero-logo { font-size: 2.4rem; margin-bottom: 4px; }
+    .hero-card h1 {
+      font-size: 1.8rem; font-weight: 800;
+      letter-spacing: -1px; margin-bottom: 2px;
+    }
+    .hero-card .subtitle {
+      color: #888; margin-bottom: 14px; font-size: 0.8rem;
+    }
+    .node-info-box {
+      background: #eaf4fb; border-radius: 10px;
+      padding: 8px 12px; margin-bottom: 14px;
+      font-size: 0.8rem; color: var(--navy);
+      border: 1px solid #b8d9ee;
+      text-align: left; line-height: 1.7;
+    }
+    .node-info-box strong {
+      display: block; margin-bottom: 1px;
+      font-size: 0.68rem; color: #888;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    #nodeUrlDisplay { font-weight: 700; font-size: 0.88rem; color: var(--navy); }
+
+    /* ── LOGIN STEPS ──────────────────────────────────────── */
+    .login-step { margin-bottom: 12px; text-align: left; }
+    .step-label {
+      font-size: 0.65rem; font-weight: 800; color: #aaa;
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+    }
+
+    /* ── MODE TABS ────────────────────────────────────────── */
+    .node-mode-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .mode-tab {
+      flex: 1; padding: 9px 6px;
+      border-radius: 10px; border: 2px solid #ddd;
+      background: #f5f5f5; color: #999;
+      font-weight: 700; font-size: 0.78rem;
+      cursor: pointer; transition: all 0.15s;
+      font-family: inherit;
+    }
+    .mode-tab.active {
+      background: var(--navy); color: white; border-color: var(--navy);
+    }
+
+    /* ── NODE PANELS ──────────────────────────────────────── */
+    .node-panel {
+      background: #f7fafc; border: 1.5px solid #dde6ef;
+      border-radius: 12px; padding: 12px;
+    }
+    .panel-hint { font-size: 0.76rem; color: #666; margin-bottom: 9px; line-height: 1.4; }
+
+    /* ── ZONE CHIPS ───────────────────────────────────────── */
+    .zone-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }
+    .zone-chip {
+      padding: 4px 10px; border-radius: 20px;
+      border: 1.5px solid #ccc; background: white;
+      font-size: 0.7rem; font-weight: 700; color: #777;
+      cursor: pointer; transition: all 0.12s; font-family: inherit;
+    }
+    .zone-chip.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+    /* ── SELECT ───────────────────────────────────────────── */
+    #hubSelect {
+      width: 100%; padding: 11px 12px;
+      border-radius: 10px; border: 1.5px solid #ddd;
+      font-size: 0.88rem; outline: none;
+      font-family: inherit; background: white;
+      color: var(--navy);
+      transition: border-color 0.15s;
+    }
+    #hubSelect:focus { border-color: var(--blue); }
+
+    /* ── CONFIRM BADGE ────────────────────────────────────── */
+    .confirm-badge {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--navy); color: white;
+      border-radius: 10px; padding: 10px 13px;
+      font-size: 0.88rem; font-weight: 700; margin-top: 9px;
+    }
+    .badge-pill {
+      font-size: 0.6rem; font-weight: 800; padding: 3px 8px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+    }
+    .manual-pill { background: var(--amber); color: #fff; }
+    .gps-pill    { background: var(--green); color: #fff; }
+
+    /* ── GPS PANEL ────────────────────────────────────────── */
+    .btn-blue { background: var(--blue); color: white; }
+    #nearbyNodesList { margin-top: 8px; font-size: 0.73rem; color: #666; }
+    #nearbyNodesList .nearby-item {
+      padding: 3px 0; border-bottom: 1px dashed #ddd;
+    }
+    #nearbyNodesList .nearby-item:last-child { border-bottom: none; }
+
+    /* ── SHARED INPUTS ────────────────────────────────────── */
+    input, select, textarea {
+      width: 100%; padding: 11px 12px; margin: 6px 0;
+      border-radius: 10px; border: 1.5px solid #ddd;
+      font-size: 0.92rem; outline: none; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+
+    /* ── MAIN APP ─────────────────────────────────────────── */
+    #main-app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    header {
+      background: var(--navy); color: var(--white);
+      padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .hub-tag {
+      background: rgba(255,255,255,0.18);
+      padding: 4px 12px; border-radius: 20px;
+      font-weight: 700; font-size: 0.82rem;
+    }
+    .mesh-status { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #888; transition: background 0.4s; }
+    .dot.online  { background: #39e07d; box-shadow: 0 0 6px #39e07d88; }
+    .dot.offline { background: var(--red); }
+
+    nav { display: flex; background: var(--white); border-bottom: 1px solid #ddd; flex-shrink: 0; }
+    .tab-btn {
+      flex: 1; padding: 14px 4px; border: none;
+      background: none; color: #888; font-weight: 700; cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+      transition: color 0.2s;
+    }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+    .viewport { flex: 1; overflow-y: auto; padding: 14px; background: #f0f4f7; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .card {
+      background: var(--white); border-radius: 14px; padding: 16px; margin-bottom: 12px;
+      box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.05);
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 12px; color: var(--navy); border-bottom: 1px solid #eee; padding-bottom: 8px; }
+
+    .incident-card {
+      border-left: 5px solid var(--blue); padding: 12px 14px; margin-bottom: 8px;
+      background: var(--white); border-radius: 0 10px 10px 0; box-shadow: var(--card-shadow);
+    }
+    .meta    { font-size: 0.72rem; color: #999; font-weight: 700; margin-bottom: 4px; }
+    .inc-msg { font-size: 0.9rem; margin-bottom: 4px; }
+    .inc-loc { font-size: 0.78rem; color: #666; }
+    .inc-node{ font-size: 0.7rem; color: #aaa; margin-top: 4px; }
+
+    .cat-Medical { border-left-color: var(--red); }
+    .cat-Rescue  { border-left-color: var(--amber); }
+    .cat-Food    { border-left-color: var(--green); }
+    .cat-Water   { border-left-color: var(--blue); }
+    .cat-Hazard  { border-left-color: #9b59b6; }
+    .cat-General { border-left-color: #95a5a6; }
+
+    .btn {
+      width: 100%; padding: 13px; border-radius: 12px;
+      border: none; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s; font-size: 0.9rem;
+    }
+    .btn:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-navy    { background: var(--navy); color: var(--white); }
+    .btn-green   { background: var(--green); color: var(--white); }
+    .btn-sos     { background: var(--red); color: var(--white); }
+    .btn-whistle { background: var(--amber); color: white; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #sysLog {
+      font-family: monospace; font-size: 0.68rem;
+      background: #1a1a2e; color: #0f9; padding: 8px 10px;
+      border-radius: 8px; margin-bottom: 10px;
+      height: 60px; overflow-y: auto; flex-shrink: 0;
+    }
+    #gpsBar { font-size: 0.72rem; color: #999; padding: 4px 0 10px; text-align: center; }
+    #gpsBar.active { color: var(--green); }
+
+    .res-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem; }
+    .res-row:last-child { border-bottom: none; }
+
+    .guide-section { margin-bottom: 20px; }
+    .guide-header { font-weight: 700; font-size: 0.9rem; color: var(--red); margin-bottom: 8px; }
+    .guide-list { list-style: none; }
+    .guide-list li { font-size: 0.84rem; margin-bottom: 7px; padding-left: 14px; border-left: 2px solid #ddd; line-height: 1.5; }
+
+    .loader { border: 3px solid #f0f0f0; border-top: 3px solid var(--navy); border-radius: 50%; width: 26px; height: 26px; animation: spin 0.9s linear infinite; margin: 20px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer { padding: 12px; background: white; border-top: 1px solid #ddd; flex-shrink: 0; display: flex; gap: 8px; }
+    footer .btn { margin: 0; }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244,162,97,0.6); }
+      50%       { box-shadow: 0 0 0 12px rgba(244,162,97,0); }
+    }
+    .whistling { animation: pulse 0.8s infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HOMEPAGE ═══════════════════════════════════════════════════ -->
+<div id="homepage">
+  <div class="hero-card">
+    <div class="hero-logo">🛡️</div>
+    <h1>ResilientAid</h1>
+    <p class="subtitle">Offline Mesh Emergency Protocol — Bangalore</p>
+
+    <div class="node-info-box">
+      <strong>Server URL — share with everyone on this hotspot</strong>
+      <span id="nodeUrlDisplay">Detecting…</span>
+    </div>
+
+    <!-- Step 1: Name -->
+    <div class="login-step">
+      <div class="step-label">Step 1 — Your Name / Callsign</div>
+      <input type="text" id="opName" placeholder="e.g. Ravi Kumar (optional)">
+    </div>
+
+    <!-- Step 2: Node selection -->
+    <div class="login-step">
+      <div class="step-label">Step 2 — Select Your Area Node</div>
+
+      <div class="node-mode-tabs">
+        <button class="mode-tab active" id="tabManual" onclick="setNodeMode('manual')">📋 Manual Select</button>
+        <button class="mode-tab"        id="tabGps"    onclick="setNodeMode('gps')">📡 Auto GPS</button>
+      </div>
+
+      <!-- MANUAL PANEL -->
+      <div id="panelManual" class="node-panel">
+        <div class="panel-hint">Filter by zone, then pick your area:</div>
+        <div class="zone-chips">
+          <button class="zone-chip active" onclick="filterZone('all',this)">All</button>
+          <button class="zone-chip" onclick="filterZone('Central',this)">Central</button>
+          <button class="zone-chip" onclick="filterZone('North',this)">North</button>
+          <button class="zone-chip" onclick="filterZone('South',this)">South</button>
+          <button class="zone-chip" onclick="filterZone('East',this)">East</button>
+          <button class="zone-chip" onclick="filterZone('West',this)">West</button>
+          <button class="zone-chip" onclick="filterZone('Greater',this)">Greater BLR</button>
+        </div>
+        <select id="hubSelect" onchange="onManualNodeChange()">
+          <option value="" disabled selected>── Select your area ──</option>
+        </select>
+        <div id="manualConfirmBadge" class="confirm-badge" style="display:none;">
+          <span id="manualConfirmName">—</span>
+          <span class="badge-pill manual-pill">MANUAL</span>
+        </div>
+      </div>
+
+      <!-- GPS PANEL -->
+      <div id="panelGps" class="node-panel" style="display:none;">
+        <div class="panel-hint">Tap the button to get a GPS fix and auto-assign your node.</div>
+        <button class="btn btn-blue" id="gpsRequestBtn" onclick="requestGPSAndAssignNode()">📡 Request GPS Fix</button>
+        <div id="gpsStatusMsg" style="font-size:0.78rem;color:#666;margin-top:9px;line-height:1.5;min-height:18px;"></div>
+        <div id="assignedNodeBadge" class="confirm-badge" style="display:none;">
+          <span id="assignedNodeName">—</span>
+          <span class="badge-pill gps-pill">GPS</span>
+        </div>
+        <div id="assignedNodeDist" style="font-size:0.72rem;color:#aaa;margin-top:4px;"></div>
+        <div id="nearbyNodesList"></div>
+      </div>
+    </div>
+
+    <!-- Launch -->
+    <button class="btn btn-navy" id="launchBtn" onclick="launchApp()" disabled>
+      Select an area node to continue
+    </button>
+    <div style="font-size:0.68rem;color:#ccc;margin-top:9px;">GPS not working? Manual mode works perfectly — just pick your area above.</div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ═══════════════════════════════════════════════════ -->
+<div id="main-app">
+  <header>
+    <div class="hub-tag">📍 <span id="currentHub">HUB</span></div>
+    <div class="mesh-status">
+      <div class="dot" id="meshDot"></div>
+      <span id="meshLabel">Connecting...</span>
+    </div>
+    <div id="clock" style="font-weight:700; font-size:0.88rem;">00:00:00</div>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('dash',this)">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('report',this)">Report</button>
+    <button class="tab-btn" onclick="switchTab('resource',this)">Resources</button>
+    <button class="tab-btn" onclick="switchTab('guide',this)">Guides</button>
+  </nav>
+
+  <div class="viewport">
+    <div id="sysLog">&gt; System booting...</div>
+    <div id="gpsBar">GPS: Searching...</div>
+
+    <!-- DASHBOARD -->
+    <div id="dash" class="view active">
+      <div id="loader" class="loader"></div>
+      <div id="feed"></div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="report" class="view">
+      <div class="card">
+        <h3>Broadcast Incident</h3>
+        <select id="incType">
+          <option value="Medical">🔴 Medical Emergency</option>
+          <option value="Rescue">🟠 Rescue / Trapped</option>
+          <option value="Food">🟢 Food Requirement</option>
+          <option value="Water">🔵 Water Requirement</option>
+          <option value="Hazard">🟣 Hazard / Electric / Fire</option>
+          <option value="General">⚪ General / Info</option>
+        </select>
+        <input type="text" id="incLoc" placeholder="Exact Landmark (e.g. Near DSATM Gate)">
+        <textarea id="incDesc" placeholder="Briefly describe the situation..." rows="3" style="resize:vertical;"></textarea>
+        <button class="btn btn-navy" id="submitBtn" onclick="submitReport()">📡 Broadcast Packet</button>
+      </div>
+    </div>
+
+    <!-- RESOURCES -->
+    <div id="resource" class="view">
+      <div class="card">
+        <h3>Community Barter Grid</h3>
+        <div id="resList">
+          <div class="res-row"><span>Drinking Water (20L)</span><b>Sector 4</b></div>
+          <div class="res-row"><span>First Aid Kit</span><b>Marathahalli Node</b></div>
+          <div class="res-row"><span>Blankets (×5)</span><b>HSR Layout</b></div>
+        </div>
+        <button class="btn btn-green" style="margin-top:14px;" onclick="addResource()">+ Offer a Resource</button>
+      </div>
+    </div>
+
+    <!-- GUIDES -->
+    <div id="guide" class="view">
+      <div class="card">
+        <div class="guide-section">
+          <div class="guide-header">🌊 Flooding &amp; Water-Logging</div>
+          <ul class="guide-list">
+            <li>Immediately switch off main circuit breakers.</li>
+            <li>Move to higher floors; never walk through moving water.</li>
+            <li>Avoid touching electrical appliances while standing in water.</li>
+            <li>Signal for help from windows or rooftops using cloth or torch.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <div class="guide-header">🔥 Fire &amp; Smoke</div>
+          <ul class="guide-list">
+            <li>Stay low — smoke rises. Crawl to exits.</li>
+            <li>Close doors to slow fire spread; don't lock them.</li>
+            <li>Never use lifts during a fire.</li>
+            <li>Signal from windows; don't jump unless fire is at your door.</li>
+          </ul>
+        </div>
+        <div class="guide-section">
+          <div class="guide-header">🏥 Medical — CPR Basics</div>
+          <ul class="guide-list">
+            <li>Check responsiveness; shout for help.</li>
+            <li>30 chest compressions at ~100/min, 2 rescue breaths.</li>
+            <li>Continue until help arrives or person recovers.</li>
+          </ul>
+        </div>
+        <button class="btn" style="background:#eee;color:#333;margin-top:10px;font-size:0.75rem;" onclick="location.reload();">↺ Refresh App</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <button class="btn btn-sos"     style="flex:1.5;" onclick="triggerSOS()">🚨 SOS</button>
+    <button class="btn btn-whistle" style="flex:1;"   id="whistleBtn" onclick="toggleWhistle()">🔊 Whistle</button>
+  </footer>
+</div>
+
+<script>
+  // ── Base URL — resolved via /config ──────────────────────────────────
+  let BASE_URL = `${location.protocol}//${location.host}`;
+  (async function resolveBaseURL() {
+    try {
+      const res = await fetch('/config', { cache: 'no-store' });
+      if (res.ok) {
+        const cfg = await res.json();
+        const serverPort  = cfg.port || 5000;
+        const currentPort = location.port || (location.protocol === 'https:' ? 443 : 80);
+        if (String(serverPort) !== String(currentPort)) {
+          BASE_URL = `${location.protocol}//${location.hostname}:${serverPort}`;
+        }
+      }
+    } catch (e) {
+      console.warn('[ResilientAid] /config unreachable, using:', BASE_URL);
+    }
+  })();
+
+  let userCoords   = "GPS Pending";
+  let operatorName = "Anonymous";
+  let whistleOn    = false;
+  let whistleCtx   = null;
+  let whistleOsc   = null;
+  let meshOnline   = false;
+  let assignedNode = null;   // { id, name, zone, lat, lng }
+  let nodeMode     = 'manual';
+
+  // ── Init ───────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('nodeUrlDisplay').textContent = BASE_URL;
+    startClock();
+    populateDropdown('all');  // populate immediately on load
+  });
+
+  // ── Mode switching ─────────────────────────────────────────────────
+  function setNodeMode(mode) {
+    nodeMode = mode;
+    document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
+    document.getElementById('tabGps').classList.toggle('active',    mode === 'gps');
+    document.getElementById('panelManual').style.display = mode === 'manual' ? '' : 'none';
+    document.getElementById('panelGps').style.display    = mode === 'gps'    ? '' : 'none';
+    // Switching tabs clears the other mode's assignment
+    if (mode === 'manual') {
+      // If there's a manual selection already, keep it; otherwise clear
+      const sel = document.getElementById('hubSelect');
+      if (!sel.value) { assignedNode = null; updateLaunchBtn(); }
+    } else {
+      // GPS tab: clear unless GPS already assigned
+      if (nodeMode === 'manual') { assignedNode = null; updateLaunchBtn(); }
+    }
+  }
+
+  // ── Zone chip filter ───────────────────────────────────────────────
+  function filterZone(zone, chipEl) {
+    document.querySelectorAll('.zone-chip').forEach(c => c.classList.remove('active'));
+    chipEl.classList.add('active');
+    populateDropdown(zone);
+  }
+
+  function populateDropdown(zone) {
+    const sel = document.getElementById('hubSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="" disabled selected>── Select your area ──</option>';
+
+    const list = (zone === 'all')
+      ? BANGALORE_NODES
+      : BANGALORE_NODES.filter(n => n.zone === zone);
+
+    for (const n of list) {
+      const opt = document.createElement('option');
+      opt.value = n.id;
+      opt.textContent = n.name;
+      sel.appendChild(opt);
+    }
+
+    // Restore previous value if still in filtered list
+    if (prev && [...sel.options].some(o => o.value === prev)) {
+      sel.value = prev;
+    }
+  }
+
+  // ── Manual dropdown change ─────────────────────────────────────────
+  function onManualNodeChange() {
+    const sel  = document.getElementById('hubSelect');
+    const id   = sel.value;
+    if (!id) return;
+    const node = BANGALORE_NODES.find(n => n.id === id);
+    if (!node) return;
+    assignedNode = node;
+    document.getElementById('manualConfirmName').textContent = '📍 ' + node.name;
+    document.getElementById('manualConfirmBadge').style.display = 'flex';
+    updateLaunchBtn();
+  }
+
+  // ── GPS request ────────────────────────────────────────────────────
+  function requestGPSAndAssignNode() {
+    const statusMsg  = document.getElementById('gpsStatusMsg');
+    const badge      = document.getElementById('assignedNodeBadge');
+    const badgeName  = document.getElementById('assignedNodeName');
+    const badgeDist  = document.getElementById('assignedNodeDist');
+    const nearbyList = document.getElementById('nearbyNodesList');
+    const gpsBtn     = document.getElementById('gpsRequestBtn');
+
+    if (!("geolocation" in navigator)) {
+      statusMsg.innerHTML = '⚠️ GPS not available on this device. Use Manual Select.';
+      return;
+    }
+
+    gpsBtn.textContent = '⏳ Getting fix…';
+    gpsBtn.disabled    = true;
+    statusMsg.innerHTML = 'Requesting location — please allow access when prompted…';
+    badge.style.display = 'none';
+    nearbyList.innerHTML = '';
+    assignedNode = null;
+    updateLaunchBtn();
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        userCoords = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        const result = findNearestNode(lat, lng);
+        assignedNode = result.node;
+
+        statusMsg.innerHTML = `✅ GPS locked — <b>${userCoords}</b>`;
+        badge.style.display = 'flex';
+        badgeName.textContent = '📍 ' + assignedNode.name;
+        badgeDist.textContent = result.distanceKm.toFixed(2) + ' km away';
+
+        const nearby = findNearestNodes(lat, lng, 5);
+        nearbyList.innerHTML =
+          '<div style="font-size:0.7rem;color:#aaa;margin-top:8px;margin-bottom:3px;">Top 5 nearby nodes:</div>' +
+          nearby.map((r, i) =>
+            `<div class="nearby-item">${i===0?'🟢':'⚪'} ${r.node.name} — ${r.distanceKm.toFixed(2)} km</div>`
+          ).join('');
+
+        document.getElementById('hubSelect').value = assignedNode.id;
+        gpsBtn.textContent = '🔄 Re-detect GPS';
+        gpsBtn.disabled    = false;
+        updateLaunchBtn();
+      },
+      err => {
+        statusMsg.innerHTML = `⚠️ GPS failed: <i>${err.message}</i><br>Switch to <b>Manual Select</b>.`;
+        gpsBtn.textContent = '🔄 Retry GPS';
+        gpsBtn.disabled    = false;
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+    );
+  }
+
+  // ── Launch button state ────────────────────────────────────────────
+  function updateLaunchBtn() {
+    const btn = document.getElementById('launchBtn');
+    if (assignedNode) {
+      btn.textContent = `🚀 Connect to ${assignedNode.name}`;
+      btn.disabled    = false;
+    } else {
+      btn.textContent = 'Select an area node to continue';
+      btn.disabled    = true;
+    }
+  }
+
+  // ── Launch ─────────────────────────────────────────────────────────
+  function launchApp() {
+    if (!assignedNode) { alert("Please select an area node first."); return; }
+    operatorName = document.getElementById('opName').value.trim() || "Anonymous";
+    const src = nodeMode === 'gps' ? 'GPS' : 'Manual';
+    document.getElementById('currentHub').textContent = assignedNode.name;
+    document.getElementById('homepage').style.display  = 'none';
+    document.getElementById('main-app').style.display  = 'flex';
+    log(`Node up. Hub: ${assignedNode.name} [${src}]. Op: ${operatorName}`);
+    initGPSWatch();
+    fetchFeed();
+    setInterval(fetchFeed, 4000);
+  }
+
+  // ── GPS watch after launch ─────────────────────────────────────────
+  function initGPSWatch() {
+    const bar = document.getElementById('gpsBar');
+    if (!("geolocation" in navigator)) {
+      bar.textContent = `Node: ${assignedNode.name} (manual — GPS unavailable)`;
+      return;
+    }
+    navigator.geolocation.watchPosition(
+      pos => {
+        userCoords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+        bar.textContent = `GPS: ${userCoords}`;
+        bar.className = 'active';
+      },
+      () => {
+        bar.textContent = assignedNode
+          ? `Node: ${assignedNode.name} (manual) — GPS unavailable`
+          : "GPS: Searching…";
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+  }
+
+  // ── Clock ──────────────────────────────────────────────────────────
+  function startClock() {
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('en-IN', { hour12: false });
+    }, 1000);
+  }
+
+  // ── Tab switching ──────────────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── Sys log ────────────────────────────────────────────────────────
+  function log(msg) {
+    const el = document.getElementById('sysLog');
+    const ts = new Date().toLocaleTimeString('en-IN', { hour12: false });
+    el.innerHTML += `\n> [${ts}] ${msg}`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ── Fetch feed ─────────────────────────────────────────────────────
+  async function fetchFeed() {
+    const dot = document.getElementById('meshDot'), label = document.getElementById('meshLabel');
+    const loader = document.getElementById('loader');
+    try {
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 4000);
+      const res  = await fetch(`${BASE_URL}/view`, { signal: ctrl.signal });
+      clearTimeout(tid);
+      const data = await res.json();
+      loader.style.display = 'none';
+      dot.className = 'dot online'; label.textContent = 'Mesh Online'; meshOnline = true;
+      const feed = document.getElementById('feed');
+      if (!data.length) {
+        feed.innerHTML = '<div class="card"><p style="color:#aaa;text-align:center;padding:10px;">Grid is clear — no active reports.</p></div>';
+        return;
+      }
+      feed.innerHTML = data.map(item => `
+        <div class="incident-card cat-${item.category}">
+          <div class="meta">[${item.category}] ${item.date||''} ${item.timestamp}</div>
+          <div class="inc-msg"><strong>${item.name||'Anonymous'}:</strong> ${item.msg}</div>
+          <div class="inc-loc">📍 ${item.loc||item.location||'Location unknown'}</div>
+          <div class="inc-node">Node: ${item.node_name||item.node||'unknown'}</div>
+        </div>`).join('');
+      log(`Sync OK — ${data.length} report(s).`);
+    } catch {
+      loader.style.display = 'none';
+      dot.className = 'dot offline'; label.textContent = 'Node Unreachable'; meshOnline = false;
+      log("Mesh link lost. Retrying…");
+    }
+  }
+
+  // ── Submit report ──────────────────────────────────────────────────
+  async function submitReport() {
+    const msg = document.getElementById('incDesc').value.trim();
+    const loc = document.getElementById('incLoc').value.trim();
+    const cat = document.getElementById('incType').value;
+    if (!msg) { alert("Please describe the situation."); return; }
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Broadcasting…'; btn.disabled = true;
+    try {
+      const res = await fetch(`${BASE_URL}/submit`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: operatorName, category: cat, message: msg,
+          location: (loc||'Not specified') + ` (GPS: ${userCoords})`,
+          node_id: assignedNode?.id || 'UNKNOWN',
+          node_name: assignedNode?.name || 'Unknown',
+        })
+      });
+      if (res.ok) {
+        log(`Broadcast OK — [${cat}] ${operatorName}`);
+        document.getElementById('incDesc').value = '';
+        document.getElementById('incLoc').value  = '';
+        switchTab('dash', document.querySelector('.tab-btn'));
+        fetchFeed();
+      } else {
+        const err = await res.json();
+        alert("Server error: " + (err.error || res.status));
+      }
+    } catch { alert("Cannot reach mesh node. Is the hotspot active?"); }
+    finally { btn.textContent = '📡 Broadcast Packet'; btn.disabled = false; }
+  }
+
+  // ── SOS ────────────────────────────────────────────────────────────
+  async function triggerSOS() {
+    const loc = document.getElementById('incLoc')?.value?.trim() || 'Unknown';
+    try {
+      await fetch(`${BASE_URL}/submit`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: operatorName, category: 'Medical',
+          message: '🚨 CRITICAL SOS — Immediate assistance required!',
+          location: loc + ` (GPS: ${userCoords})`,
+          node_id: assignedNode?.id || 'UNKNOWN',
+          node_name: assignedNode?.name || 'Unknown',
+        })
+      });
+      log("SOS broadcasted."); fetchFeed();
+      switchTab('dash', document.querySelector('.tab-btn'));
+    } catch { alert("SOS could not be sent — check node connection."); }
+  }
+
+  // ── Whistle ────────────────────────────────────────────────────────
+  function toggleWhistle() {
+    const btn = document.getElementById('whistleBtn');
+    if (whistleOn) {
+      whistleOsc?.stop(); whistleCtx?.close();
+      whistleCtx = null; whistleOsc = null; whistleOn = false;
+      btn.textContent = '🔊 Whistle'; btn.classList.remove('whistling');
+    } else {
+      try {
+        whistleCtx = new (window.AudioContext || window.webkitAudioContext)();
+        whistleOsc = whistleCtx.createOscillator();
+        const gain = whistleCtx.createGain();
+        whistleOsc.type = 'sine';
+        whistleOsc.frequency.setValueAtTime(2800, whistleCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, whistleCtx.currentTime);
+        whistleOsc.connect(gain); gain.connect(whistleCtx.destination);
+        whistleOsc.start(); whistleOn = true;
+        btn.textContent = '🔇 Stop'; btn.classList.add('whistling');
+        log("Whistle ON (2800 Hz)");
+      } catch { alert("Audio not supported on this browser."); }
+    }
+  }
+
+  // ── Add resource ───────────────────────────────────────────────────
+  function addResource() {
+    const item = prompt("What are you offering?");
+    const loc  = prompt("Your sector / location?");
+    if (item && loc) {
+      const row = document.createElement('div');
+      row.className = 'res-row';
+      row.innerHTML = `<span>${item}</span><b>${loc}</b>`;
+      document.getElementById('resList').appendChild(row);
+    }
+  }
+</script>
+
+<script>
+  // ── Service Worker registration ──────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[SW] Registered:', reg.scope))
+        .catch(err => console.warn('[SW] Failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
